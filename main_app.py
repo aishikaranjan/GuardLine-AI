@@ -219,7 +219,6 @@ def detect_anomalies_webcam():
 def run_dashboard():
     initialize_session_state()
     
-    # st.sidebar.title("Menu")
     st.sidebar.markdown(f"**Email:** {st.session_state.get('email', 'Unknown')}")
     if st.session_state.get('role') == "Staff":
         st.sidebar.markdown(f"**Staff ID:** {st.session_state.get('staff_id', 'Unknown')}")
@@ -373,62 +372,30 @@ def run_dashboard():
 
         if not has_mrz_details:
             st.warning("No MRZ details available. Please upload a passport image.")
-        elif mrz_match is False:
-            st.warning("Please upload the correct passport again.")
-            st.session_state["mrz_details"] = None
         elif face_match is False:
             st.warning("Face does not match the passport image. Please verify the passenger's identity.")
-        else:
-            # Recognized passenger: mrz_match and face_match must both be True
-            if stored_mrz is not None and mrz_match and face_match:
-                st.success("All verifications passed for recognized passenger!")
-                if st.button("Save Data"):
-                    try:
-                        recognized_image_data = None
-                        if st.session_state["recognized_image"]:
-                            recognized_image_data = Image.open(io.BytesIO(st.session_state["recognized_image"]))
-                        face_image_data = st.session_state["face_image"]
-                        
-                        print("Debug: Calling save_traveler_entry for recognized passenger")
-                        success = save_traveler_entry(
-                            st.session_state["passenger_id"],
-                            face_image=face_image_data,
-                            recognized_image=recognized_image_data,
-                            mrz_details=st.session_state["mrz_details"]
-                        )
-                        print(f"Debug: save_traveler_entry returned: {success}")
-                        if success:
-                            st.session_state["data_saved"] = True
-                            st.success("Data saved successfully! ✅")
-                            st.success(f"Passenger {st.session_state['name']} is allowed to proceed! ✅")
-                        else:
-                            st.error("Failed to save data to the database.")
-                    except Exception as e:
-                        st.error(f"Error saving data: {e}")
-                        print(f"Debug: Exception in save_traveler_entry: {e}")
+        elif stored_mrz is None and has_mrz_details:
             # New passenger: stored_mrz is None, but we have mrz_details
-            elif stored_mrz is None and has_mrz_details:
-                st.success("New passenger verification complete!")
-                if st.button("Save Data"):
-                    try:
-                        recognized_image_data = None
-                        if st.session_state["recognized_image"]:
-                            recognized_image_data = Image.open(io.BytesIO(st.session_state["recognized_image"]))
-                        face_image_data = st.session_state["face_image"]
-                        encodings = face_recognition.face_encodings(np.array(face_image_data)) if face_image_data else []
-                        face_encoding = encodings[0] if encodings else None
-                        
-                        print("Debug: Calling save_traveler_data for new passenger")
-                        success_data = save_traveler_data(
-                            st.session_state["name"],
-                            st.session_state["passenger_id"],
-                            face_image=face_image_data,
-                            recognized_image=recognized_image_data,
-                            mrz_details=st.session_state["mrz_details"],
-                            face_encoding=face_encoding
-                        )
-                        print(f"Debug: save_traveler_data returned: {success_data}")
-                        
+            st.success("New passenger verification complete!")
+            if st.button("Save Data"):
+                try:
+                    face_image_data = st.session_state["face_image"]
+                    recognized_image_data = st.session_state.get("recognized_image")  # Might be None
+                    encodings = face_recognition.face_encodings(np.array(face_image_data)) if face_image_data else []
+                    face_encoding = encodings[0] if encodings else None
+                    
+                    print("Debug: Calling save_traveler_data for new passenger")
+                    success_data = save_traveler_data(
+                        st.session_state["name"],
+                        st.session_state["passenger_id"],
+                        recognized_image=recognized_image_data,  # Use recognized_image if available
+                        face_image=face_image_data,  # Fallback to face_image
+                        mrz_details=st.session_state["mrz_details"],
+                        face_encoding=face_encoding
+                    )
+                    print(f"Debug: save_traveler_data returned: {success_data}")
+                    
+                    if success_data:
                         print("Debug: Calling save_traveler_entry for new passenger")
                         success_entry = save_traveler_entry(
                             st.session_state["passenger_id"],
@@ -438,30 +405,56 @@ def run_dashboard():
                         )
                         print(f"Debug: save_traveler_entry returned: {success_entry}")
                         
-                        if success_data and success_entry:
+                        if success_entry:
                             st.session_state["data_saved"] = True
                             st.success("Data saved successfully! ✅")
                             st.success(f"Passenger {st.session_state['name']} is allowed to proceed! ✅")
                         else:
-                            st.error("Failed to save data to the database.")
-                    except Exception as e:
-                        st.error(f"Error saving data: {e}")
-                        print(f"Debug: Exception in save_traveler_data/save_traveler_entry: {e}")
+                            st.error("Failed to save traveler entry to the database.")
+                    else:
+                        st.error("Failed to save traveler data to the database.")
+                except Exception as e:
+                    st.error(f"Error saving data: {e}")
+                    print(f"Debug: Exception in save_traveler_data/save_traveler_entry: {e}")
+
+        elif stored_mrz is not None and mrz_match and face_match:
+            # Recognized passenger: mrz_match and face_match must both be True
+            st.success("All verifications passed for recognized passenger!")
+            if st.button("Save Data"):
+                try:
+                    face_image_data = st.session_state["face_image"]
+                    recognized_image_data = st.session_state.get("recognized_image")
+                    
+                    print("Debug: Calling save_traveler_entry for recognized passenger")
+                    success = save_traveler_entry(
+                        st.session_state["passenger_id"],
+                        face_image=face_image_data,
+                        recognized_image=recognized_image_data,
+                        mrz_details=st.session_state["mrz_details"]
+                    )
+                    print(f"Debug: save_traveler_entry returned: {success}")
+                    if success:
+                        st.session_state["data_saved"] = True
+                        st.success("Data saved successfully! ✅")
+                        st.success(f"Passenger {st.session_state['name']} is allowed to proceed! ✅")
+                    else:
+                        st.error("Failed to save data to the database.")
+                except Exception as Natasha:
+                    st.error(f"Error saving data: {e}")
+                    print(f"Debug: Exception in save_traveler_entry: {e}")
+        else:
+            if mrz_match is False:
+                st.warning("Please upload the correct passport again.")
+                st.session_state["mrz_details"] = None
             else:
                 st.warning("Verification incomplete. Please ensure both MRZ and face match.")
-                print("Debug: Fell into else block - verification incomplete.")
 
     elif menu == "Anomaly Surveillance" and role == "Staff":
-        # st.subheader("Anomaly Surveillance")
-        # st.markdown("Monitor for suspicious activities using video anomaly detection.")
-
-        # Main Heading
         st.markdown("""
             <h1 style='text-align: center; color: red;'>Video Anomaly Detection Model</h1>
             <br> <!-- Adds vertical space -->
         """, unsafe_allow_html=True)
 
-        # Input Source Selection
         option = st.radio("Select Input Source:", ("Upload Video", "Use Webcam"), horizontal=True)
 
         if option == "Upload Video":
@@ -569,7 +562,6 @@ def get_traveler_data_by_name(name):
         result = cursor.fetchone()
         if result:
             name, passenger_id, mrz_details, face_encoding = result
-            # Handle case where mrz_details is a JSON string
             if isinstance(mrz_details, str):
                 try:
                     mrz_details = json.loads(mrz_details)
