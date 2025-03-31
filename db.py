@@ -36,22 +36,20 @@ def save_traveler_data(name, passenger_id, face_image=None, recognized_image=Non
         return False
     cursor = conn.cursor()
     try:
-        face_image_bytes = face_image_to_bytes(face_image) if face_image else None
         recognized_image_bytes = face_image_to_bytes(recognized_image) if recognized_image else None
         mrz_details_json = json.dumps(mrz_details) if mrz_details else None
         face_encoding_bytes = face_encoding.tobytes() if face_encoding is not None else None
         
         print(f"Debug: Saving traveler data - Name: {name}, Passenger ID: {passenger_id}")
         cursor.execute("""
-            INSERT INTO travelers (name, passenger_id, face_image, recognized_image, mrz_details, face_encoding)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO travelers (name, passenger_id, recognized_image, mrz_details, face_encoding)
+            VALUES (%s, %s, %s, %s, %s)
             ON CONFLICT (passenger_id) DO UPDATE
             SET name = EXCLUDED.name,
-                face_image = EXCLUDED.face_image,
                 recognized_image = EXCLUDED.recognized_image,
                 mrz_details = EXCLUDED.mrz_details,
                 face_encoding = EXCLUDED.face_encoding
-        """, (name, passenger_id, face_image_bytes, recognized_image_bytes, mrz_details_json, face_encoding_bytes))
+        """, (name, passenger_id, recognized_image_bytes, mrz_details_json, face_encoding_bytes))
         conn.commit()
         print("Debug: Successfully saved traveler data.")
         return True
@@ -76,8 +74,8 @@ def save_traveler_entry(passenger_id, face_image=None, recognized_image=None, mr
         
         print(f"Debug: Saving traveler entry - Passenger ID: {passenger_id}")
         cursor.execute("""
-            INSERT INTO traveler_entries (passenger_id, face_image, recognized_image, mrz_details)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO traveler_entries (passenger_id, face_image, recognized_image, mrz_details, entry_timestamp)
+            VALUES (%s, %s, %s, %s, NOW())
         """, (passenger_id, face_image_bytes, recognized_image_bytes, mrz_details_json))
         conn.commit()
         print("Debug: Successfully saved traveler entry.")
