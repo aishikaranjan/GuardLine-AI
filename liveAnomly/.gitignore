@@ -1,0 +1,23 @@
+# Ignore dataset files
+Avenue Dataset/
+*.npy
+
+# Ignore model checkpoints and saved models
+model/
+model\saved_model.keras
+
+# Ignore virtual environment
+venv/
+
+# Ignore cache and compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore results directory (if not needed)
+results/
+
+# Ignore any logs or temp files
+*.log
+temp_files/

@@ -1,0 +1,41 @@
+# Ignore virtual environment
+venv/
+
+# Ignore dataset files
+*.csv
+*.xlsx
+*.json  # If you have large JSON datasets
+*.pkl   # Pickle files
+
+# Ignore temporary and cache files
+__pycache__/
+*.pyc
+*.log
+.github/
+temp_files/
+Avenue Dataset/
+.gitignore/
+assets/
+images/
+data/
+docs/
+setup.py
+migrate_faces.py
+migrate_users.py
+saved_entries/
+.env/
+streamlit.py
+users_backup.json
+users.json
+
+# Video files
+*.mp4
+*.avi
+*.mov
+
+# Temporary files
+*.tmp
+
+# Database files
+*.db
+*.env
